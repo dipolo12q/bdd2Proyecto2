@@ -1,5 +1,7 @@
 # bdd2Proyecto2
 
+<img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/UTEC.jpg" width="200">
+
 # **Integrantes**
 * Franco Pacheco Espino
 * Nincol Abraham Quiroz Maquin
@@ -102,7 +104,7 @@ Esta función procesa todos los datos de los archivos JSON y se basa en algoritm
 def load(self):
 ```
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/load.JPEG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/load.jpeg)
 
 ### Función score
 Esta función descarta los stopwords y aplica el stemmer en la query para obtener sus terminos raiz que se podrian encontrar en el indice invertido, utilizando los valores TF IDF de los terminos y la similitud de coseno traerá los tweets más parecidos a la query. Luego utilizaremos la  función retrieve_k_tweets para devolver un ranking top k de estos mismos tweets.
@@ -111,7 +113,7 @@ Esta función descarta los stopwords y aplica el stemmer en la query para obtene
 def score(self, query):
 ```
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/score.JPEG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/score.jpeg)
 
 ### Función retrieve
 Finalmente esta función retorna solo los k tweets más parecidos a la query.
@@ -120,20 +122,20 @@ Finalmente esta función retorna solo los k tweets más parecidos a la query.
 def retrieve_k_tweets(self, k):
 ```
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/retrieve.JPEG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/retrieve.jpeg)
 
 # Frontend
 Para el frontend se utilizó html, css (bootstrap) y javascript. La aplicación web tiene dos vistas: una principal (index.html) que solo recibe la query y el valor de k (cantidad de resultados que se van a recuperar), y otra que es la que muestra los resultados tanto del codigo python como de postgres y sus respectivos tiempos (retrieve.html).
 
 ### Imagen de la vista principal:
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/frontend1.PNG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/frontend1.png)
 
 ### Imagenes de la vista retrieve:
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/frontend2.PNG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/frontend2.png)
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/frontend3.PNG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/frontend3.png)
 
 ## Diseño de indice PostgreSQL
 ### Función load_data_in_postgres
@@ -164,7 +166,7 @@ query5 = "Urresti no es mejor que Beingolea para ser alcalde, no puede ser que u
 
 Y se tomó valores de k en escala logaritmica, lo que dió los siguientes resultados:
 
-![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/cuadro.JPG)
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/blob/main/src/cuadro.jpg)
 
 Se puede apreciar que el rendimiento de PostgreSQL es mejor en general. También se notó que algunos resultados de ambas implementaciones retornaban tweets que solo contenían el término más común de la query. 
 
