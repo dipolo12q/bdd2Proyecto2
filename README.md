@@ -57,10 +57,11 @@ En este proyecto buscamos crear un motor de busqueda que pueda recibir una query
 # Backend
 
 ## Dataset
-El dataset contiene información sobre un conjunto muy grande de artículos académicos de los cuales solo extraeremos los más importantes correspondientes a una query
-El dataset fue obtenido de: [![Dataset]()](https://onedrive.live.com/?authkey=%21AARlFTKCCvDtnOQ&id=C2923DF9F1F816F%2150804&cid=0C2923DF9F1F816F)
-El nombre del archivo utilizado (en caso sea actualizado) es: "tweets_2018.json"
-Metadata del archivo de datos escogido:
+El dataset contiene una coleccion de 479945 tweets (casi medo millón) proporcionados por el profesor, de los cuales recuperaremos los mas relevantes que se asemejen a una query dada por un usuario. El dataset fue obtenido de: [![Dataset]()](https://onedrive.live.com/?authkey=%21AARlFTKCCvDtnOQ&id=C2923DF9F1F816F%2150804&cid=0C2923DF9F1F816F)
+El nombre del archivo utilizado (en caso sea actualizado) es: "dataset.zip" y consta de
+59 archivos en formato JSON que contienen la cantidad de tweets mencionada.
+
+Campos del archivo de datos escogido:
 * id
 * date
 * text
@@ -68,11 +69,12 @@ Metadata del archivo de datos escogido:
 * user_name
 * location
 * retweeted
- Y dependiendo si retweeted es verdadero o falso, también:
+
+Y dependiendo si retweeted es verdadero o falso, también:
 * RT_text
 * RT_user_id
 * RT_user_name
-Sin embargo, la data más relevante corresponde a los campos "id" y "text" que son las utilizadas en el caso de este proyecto.
+
 
 ## Inverted index
 Es un método para estructurar la información más importante de un texto completo. La composición se da mediante un documento el cual tiene términos con una determinada frecuencia. En el caso del proyecto la información de la base de datos es organizada para retornar datos de una forma rápida y óptima. La consulta enviada también se procesa y organiza de la misma manera, posteriormente se genera un score de similitud con todos los documentos de la base de datos antes descritos. Finalmente se devuelven los documentos con mayor score los cuales se consideran más importantes.
@@ -94,37 +96,77 @@ def __init__(self):
 
 
 ### Función load
-Esta función procesa todos los datos del json. Extrae todos los términos importantes evitando todos los stopwords de la lista dada y va generando índice para cada término el cual contiene todo los tweets que lo contienen y su frecuencia respectiva. Estos diccionarios tienen un límite de tamaño, el cual si es superado pasa a memoria secundaria guardando en archivos secundarios y durante el procesamiento se va guardando la norma de estos términos.
-
-Finalmente  se realiza el merge de los archivos auxiliares creados que posteriormente elimina y finalmente este merge lo coloca en un Priority Queue. Estos datos dependiendo de los parámetros que inserte el usuario posteriormente nos serán útiles para retornar los primeros k resultados más similares a una query. 
+Esta función procesa todos los datos de los archivos JSON y se basa en algoritmo SPIMI (Single Pass In Memory Indexing). Extrae todos los términos importantes evitando todos los stopwords de la lista dada y va generando un índice para cada término el cual contiene todos los tweets que lo contienen con su frecuencia respectiva, y posteriormente su IDF. Estos diccionarios tienen un límite de tamaño, el cual si es superado pasa a memoria secundaria guardando en archivos auxiliares. Finalmente  se realiza el merge de los archivos auxiliares creados que posteriormente elimina y coloca en un Priority Queue que luego unificará en un archivo con el indice invertido completo (big index), eliminando los archivos auxiliares, además durante el procesamiento se va guardando la norma de estos términos en otro archivo en memoria secundaria.
 
 ```python
 def load(self):
 ```
 
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/load.JPEG)
+
 ### Función score
-Esta función descarta los stopwords antes procesados por el constructor y traerá los documentos científicos más parecidos a la query. Luego utilizaremos la  función tf_idf_weight_and_cosine_score para devolver un ranking de estos mismos documentos.
+Esta función descarta los stopwords y aplica el stemmer en la query para obtener sus terminos raiz que se podrian encontrar en el indice invertido, utilizando los valores TF IDF de los terminos y la similitud de coseno traerá los tweets más parecidos a la query. Luego utilizaremos la  función retrieve_k_tweets para devolver un ranking top k de estos mismos tweets.
+
 ```python
 def score(self, query):
 ```
 
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/score.JPEG)
+
 ### Función retrieve
-Finalmente esta función retorna solo los k documentos más parecidos a la query.
+Finalmente esta función retorna solo los k tweets más parecidos a la query.
+
 ```python
 def retrieve_k_tweets(self, k):
 ```
 
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/retrieve.JPEG)
+
 # Frontend
-Para el frontend se utilizó html y bootstrap. También se utilizó el motor de plantillas de jinja2 para poder manejar la cantidad de documentos similares a la consulta del usuario. 
+Para el frontend se utilizó html, css (bootstrap) y javascript. La aplicación web tiene dos vistas: una principal (index.html) que solo recibe la query y el valor de k (cantidad de resultados que se van a recuperar), y otra que es la que muestra los resultados tanto del codigo python como de postgres y sus respectivos tiempos (retrieve.html).
+
+### Imagen de la vista principal:
+
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/frontend1.PNG)
+
+### Imagenes de la vista retrieve:
+
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/frontend2.PNG)
+
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/frontend3.PNG)
+
+## Diseño de indice PostgreSQL
+### Función load_data_in_postgres
+Se utilizó la librería de Python psycopg2 para la creación de la tabla he indice GIN en una base de datos llamada proyecto2BD2 en postgreSQL.
+
+Primero se crea una conección con el nombre de la base de datos (proyecto2BD2) y el usuario de postgres y su contraseña (que se deben de modificar manualmente en el archivo Postgres.py), luego los datos se crea la tabla tweets con los campos: t_id BIGINT, t_date TEXT, t_text TEXT, user_id BIGINT, user_name TEXT. Se copian los datos de los archivos JSON, y luego de agrega la columna search_text de tipo tsvector que se hará update para cada fila de la tabla tweets. Finalmente se crea el indice GIN tweet_idx_search con los valores de la columna search_text para la tabla tweets.
+```python
+def load_data_in_postgres():
+```
+
+### Función postgres_retrieve_k
+Crea una conección con la base de datos igual que la función anterior y solo ejecuta una consulta que hace uso del indice GIN creado y devuelve los k tweets con mayor score según el indice para una query, devuelve sus campos t_id, t_text y ts_rank_cd que es como su score, luego ejecuta explain analyze para tambien retornar cuanto tiempo demora la consulta.
+```python
+def postgres_retrieve_k(query, k):
+```
 
 ## Comparación de tiempo
-Para esta sección nos apoyamos de las variables que usamos en nuestra clase de indice invertido, con el print de estas variables obtuvimos datos relevantes como accesos a memoria en general y tiempo, de acuerdo al siguiente query obtuvimos los siguientes resultados:
+Se hicieron pruebas experimentales con diferentes querys en lenguaje natural y diferentes valores de k de la cantidad de resultados aproximados a retornar para ambas implementaciones en python y postgreSQL.
 
-Posteriormente a esto guardaremos los datos de tiempo y cantidad de datos, esto nos ayudará a ver una comparativa entre el índice invertido en python y el de GIN de postgres.
+Las querys utilizadas (todas tienen que ver con el tema recurrente de los tweets, que era las elecciones municipales de 2018) fueron las siguientes:
+```python
+query1 = "Que buena la de Velarde. Ojala lo impulse hacia arriba en las encuestas, aunque quiza ya sea tarde, una pena"
+query2 = "Estas próximas elecciones es la mejor oportunidad para sacar a los corruptos de la administración pública"
+query3 = "Ese Reggiardo de alto al crimen fue fujimorista y el hijo de Castañeda debe ser tan corrupto como su viejo"
+query4 = "Yo voy a votar por Jorge Munoz ahora con mas ganas luego de ver lo soberbio, patan e intolerante de Urresti"
+query5 = "Urresti no es mejor que Beingolea para ser alcalde, no puede ser que un corrupto y homicida salga elegido"
+```
 
-![Image text](https://github.com/Neo-Zapata/DBII-Project2/blob/main/images/Resultado3.PNG)
+Y se tomó valores de k en escala logaritmica, lo que dió los siguientes resultados:
 
-Para la creación de la gráfica usamos el logaritmo de los valores para tener un gráfico más apreciable. Finalmente podemos notar que, para el query analizado, el índice invertido realizado en python es mejor para datos pequeños, pasada una cantidad de datos de 90 000 aproximadamente (inflexión), el indice GIN de postgres empieza a tener un mejor rendimiento en adelante.
+![Image text](https://github.com/dipolo12q/bdd2Proyecto2/tree/main/src/cuadro.JPG)
+
+Se puede apreciar que el rendimiento de PostgreSQL es mejor en general. También se notó que algunos resultados de ambas implementaciones retornaban tweets que solo contenían el término más común de la query. 
 
 # Video
 [carpeta](https://drive.google.com/drive/folders/1XmRxondQuUs3ywY7qSe2BCrGSxdJkapz?usp=sharing)
