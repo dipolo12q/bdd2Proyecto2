@@ -11,7 +11,7 @@ path_data2 = getcwd() #cwd + "/UTEC/Base de Datos 2/material/base_de_datos_II_pr
 path_data_in1 = path_data1 + "data_in/"
 path_data_in2 = path_data2 + "\\data_in\\" #join(path_data path_data + "data_in")
 
-path = "D:\\UTEC\Base de Datos 2\material\\base_de_datos_II_proyecto_2-main\\backend\\recovery\data\data_in"
+path = "C:\\Users\\ninco\\Documents\\GitHub\\UTEC\\aed\\bdd2Proyecto2\\backend\\recovery\\data\\data_in"
 
 def load_data_in_postgres():
     try:
@@ -93,7 +93,7 @@ def postgres_retrieve_k(query, k):
     documents_to_retrieve = []
 
     try:
-        conection = psycopg2.connect(host="localhost", database="proyecto2BD2", user="postgres", password="Franco71422229")
+        conection = psycopg2.connect(host="localhost", database="proyecto2BD2", user="postgres", password="lux")
         cursor = conection.cursor()
 
         postgres_insert_query = '''select t_id,

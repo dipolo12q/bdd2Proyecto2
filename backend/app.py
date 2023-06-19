@@ -38,8 +38,8 @@ def score(text):
     return  redirect(url_for('retrieve', number = n, query = palabra))
 
 
-@app.route("/retrieve/page<number>/query=<query>", methods = ['GET'])
-def retrieve(number, query):
+@app.route("/retrieve/page<number>/query=<query>/k=<k>", methods = ['GET'])
+def retrieve(number, query, k):
     print(number)
     #return dataRecovery.retrieve_k_tweets(number)
     data = dataRecovery.retrieve_k_tweets(number)
@@ -47,10 +47,12 @@ def retrieve(number, query):
     page = number
     print(data)
     #postgress
-    data2,time = pg.retrieve_k_tweets(number)
+    data2,time = pg.postgres_retrieve_k(query,k)
+    print("ASDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+    print(data2)
     
     if(not data):
-        return redirect(url_for('retrieve', number = 1, query = palabra))
+        return redirect(url_for('retrieve', number = 1, query = palabra, k = k))
     return render_template('retrieve.html', obj2 = data2, obj = data, word = palabra, Npage = page, postgres_time = time)
 
 @app.route('/favicon.ico')
@@ -63,5 +65,3 @@ if __name__ == '__main__':
     app.run(debug = True, port = 5050)
     app.add_url_rule('/favicon.ico',
                  redirect_to=url_for('static', filename='src/logoico.png'))
-    
-

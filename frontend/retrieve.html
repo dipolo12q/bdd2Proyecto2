@@ -42,24 +42,16 @@
                 </div>
             {% endfor %}
         </div>
+        <br>
         <div class="row row-cols-1 row-cols-md-2 g-4">
             {% for item in obj2 %}
             <div class="col">
                 <div class="card text-white" style="background-color: #3b3b3b">
-                    <div class="card-header">Id Tweet: {{ item.tweet_id}}</div>
+                    <div class="card-header">Id Tweet: {{ item.id}}</div>
                     <div class="card-body">
-                      <h5 class="card-title">Contenido: {{ item.text }}</h5>
-                      <p class="card-text">Id usuario: {{ item.user_id }}</p>
-                      <p class="card-text">Fecha: {{ item.date }}</p>
-                      <p class="card-text">Posición: {{ item.position }}</p>
-                      <p class="card-text">Score Relativo: {{ item.relative_score }} %</p>
-                      {% if 'score' in item %} 
-                      <!-- mostramos solo si es un resultado de Postgres -->
-                      <p class="card-text">Score total: {{ item.score }}</p>
-                      <p class="card-text"> Time: {{ postgres_time }} ms</p>
-                      {% endif %}
+                      <h5 class="card-title">Contenido: {{ item.title }}</h5>
+                      <p class="card-text">Score: {{ item.score }} %</p>
                     </div>
-                    <div class="card-footer">Score total: {{ item.score }}</div>
                  </div>
                 </div>
             {% endfor %}
