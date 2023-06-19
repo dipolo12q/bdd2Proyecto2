@@ -131,4 +131,4 @@ Posteriormente a esto guardaremos los datos de tiempo y cantidad de datos, esto 
 Para la creación de la gráfica usamos el logaritmo de los valores para tener un gráfico más apreciable. Finalmente podemos notar que, para el query analizado, el índice invertido realizado en python es mejor para datos pequeños, pasada una cantidad de datos de 90 000 aproximadamente (inflexión), el indice GIN de postgres empieza a tener un mejor rendimiento en adelante.
 
 # Video
-En el video: [carpeta](https://drive.google.com/drive/folders/1XmRxondQuUs3ywY7qSe2BCrGSxdJkapz?usp=sharing))
+[carpeta](https://drive.google.com/drive/folders/1XmRxondQuUs3ywY7qSe2BCrGSxdJkapz?usp=sharing)
