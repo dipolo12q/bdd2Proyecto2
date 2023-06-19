@@ -8,7 +8,6 @@
 
 
 # Tabla de contenido
-- [Cuadro de Actividades](#Cuadro-de-Actividades)
 - [Cuadro de Participación](#Cuadro-de-Participación)
 - [Objetivo](#Objetivo)
 - [Backend](#Backend)
@@ -20,7 +19,6 @@
     + [Función score](#Función-score)
     + [Función retrieve](#Función-retrieve)
 - [Frontend](#Frontend)
-  * [Comparativa de Python y Postgres](#Comparativa-de-Python-y-Postgres)
   * [Comparación de tiempo](#Comparación-de-tiempo)
 
 
