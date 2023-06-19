@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>GooTec</title>
+  <title>BingTec</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='/estilo.css') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='src/logoico.png') }}">
@@ -15,10 +15,14 @@
   
     <div class = "generalquery">
         <div class = "img"><img src = "../frontend/src/icone-loupe-gris.png" width="20"></div>
-        <div class = "query"><input id = "query" class = "querybox" type = "text" name = "query" title = "Búsqueda" label = "query" required></div>
-        <div class = "query"><input id = "k" class = "querybox" type = "text" name = "k" title = "Búsqueda" label = "k" required></div>
-        <div class = "img1"> </div>
+        <div class = "query"><input id = "query" class = "querybox" type = "text" name = "query" title = "Búsqueda" label = "query" placeholder="Ingrese la query en lenguaje natural" required></div>
     </div>
+
+    <div class = "generalquery">
+        <div class = "img1"> </div>
+        <div class = "query"><input id = "k" class = "querybox" type = "text" name = "k" title = "cantidad" label = "k" placeholder="Ingrese el valor de k" required></div>
+    </div>
+
     <script src = "../frontend/scripts/index.js" ></script>
     
     <div class = "botones">

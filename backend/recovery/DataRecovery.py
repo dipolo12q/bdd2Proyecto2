@@ -1,21 +1,13 @@
-from numpy import sqrt, square
+import numpy as np
+import pandas as pd
 import json
-from flask import (
-Flask, 
-jsonify
-)
 import io
 from os import listdir, remove
 from os.path import isfile, join
 import linecache
-from math import log10
 from queue import PriorityQueue
-from nltk.tokenize.toktok import ToktokTokenizer
-# >>> import nltk
-# >>> nltk.download('perluniprops')
-# >>> nltk.download('nonbreaking_prefixes')
+from nltk.tokenize.toktok import ToktokTokenizer #tokenizador que ya puede filtrar simbolos y caracteres raros
 from nltk.stem.snowball import SnowballStemmer
-import re
 
 # for backend:
 path_data = "recovery/data/"
@@ -54,19 +46,15 @@ class DataRecovery():
     map_score = {}
     list_keys = []
     map_tweets = {}
-    max_score = 0
 
     def __init__(self):
         self.stopList.clear()
-        with open(path_stop_list, 'r', encoding="utf-8") as file:
+        with open(path_stop_list, 'r', encoding="latin-1") as file:
             self.stopList = [line.lower().strip() for line in file]
-            file.close()
         with open(path_norm_doc, 'r', encoding="utf-8") as file:
             self.N = sum(1 for line in file)
-            file.close()
         with open(path_file_data, 'r', encoding="utf-8") as file:
             self.Nterms = sum(1 for line in file)
-            file.close()
 
     def ini(self):
         return "Hay en memoria " + str(self.Nterms) + " términos y " + str(self.N) + " tweets procesados"
@@ -82,18 +70,15 @@ class DataRecovery():
                 file_aux_out.write(json.dumps(
                     {key: local_map[key]}, ensure_ascii=False))
                 file_aux_out.write("\n")
-            file_aux_out.close()
 
     def __save_in_file_norm(self, frecuency_map, id):
         with open(path_norm_doc, 'a', encoding="utf-8") as file_norm_out:
-            sum = 0
-            for key in frecuency_map:
-                sum = sum + \
-                    log10(frecuency_map[key]+1) * log10(frecuency_map[key]+1)
-            sum = sqrt(sum)
-            file_norm_out.write(json.dumps({id: sum}, ensure_ascii=False))
+            values=[]
+            for key, val in frecuency_map.items():
+                values.append(val)
+            norm = np.linalg.norm(values)
+            file_norm_out.write(json.dumps({id: norm}, ensure_ascii=False))
             file_norm_out.write("\n")
-            file_norm_out.close()
 
     def __get_item_from_json_line(self, line):
         item_json = json.load(io.StringIO(line))
@@ -120,7 +105,6 @@ class DataRecovery():
                         tweet_text = json_tweet.get("text").lower() if json_tweet.get(
                             "RT_text") == None else json_tweet.get("RT_text").lower()
                         tweet_words = self.tokenizer.tokenize(tweet_text)
-                        # tweet_words = nltk.word_tokenize(tweet_text)
                         frecuency_map = {}
                         for tweet_word in tweet_words:
                             if tweet_word in self.stopList:
@@ -154,32 +138,27 @@ class DataRecovery():
                                     len(str(tweet_id)) + 1 + \
                                     len(tweet_word_root) + 8
                             if size_of_local_map > MAX_TERMS_IN_MAP:
-                                self.__save_in_file_aux(
-                                    local_map, path_file_aux + str(id_file_aux) + path_file_aux_end)
+                                self.__save_in_file_aux(local_map, path_file_aux + str(id_file_aux) + path_file_aux_end)
                                 local_map.clear()
                                 size_of_local_map = 0
-                                id_file_aux = id_file_aux + 1
+                                id_file_aux += 1
                             if tweet_word_root in frecuency_map:
-                                frecuency_map[tweet_word_root] = frecuency_map[tweet_word_root] + 1
+                                frecuency_map[tweet_word_root] += 1
                             else:
                                 frecuency_map[tweet_word_root] = 1
                         self.__save_in_file_norm(frecuency_map, tweet_id)
-                        self.N = self.N + 1
-                    file_to_load.close()
+                        self.N += 1
         if len(local_map) > 0:
-            self.__save_in_file_aux(local_map, path_file_aux +
-                                    str(id_file_aux) + path_file_aux_end)
-        print(str(id_file_aux) +
-              " archivos auxiliares generados. Generando archivo único")
-        # Una vez generado los aux, unificarlos. Hay id_file_aux
+            self.__save_in_file_aux(local_map, path_file_aux + str(id_file_aux) + path_file_aux_end)
+        print(str(id_file_aux) + " archivos auxiliares generados. Generando archivo único")
+        # Una vez generado los archivos auxiliares, unificarlos. Hay id_file_aux
         # Por cada id_file_aux, generar un buffer de lectura
         read_buffer = []
         number_of_line_buffer = []
         pq = PriorityQueue()
         buffer_remaining = []
         for i in range(id_file_aux):
-            line = linecache.getline(
-                path_file_aux + str(i+1) + path_file_aux_end, 1).rstrip()
+            line = linecache.getline(path_file_aux + str(i+1) + path_file_aux_end, 1).rstrip()
             if line == "":
                 continue
             read_buffer.append(self.__get_item_from_json_line(line))
@@ -190,35 +169,26 @@ class DataRecovery():
         self.Nterms = 0
         with open(path_file_data, 'a', encoding="utf-8") as file:
             while not pq.empty():
-                # Ver buffers y remaining buffers
-                '''
-                for pair in read_buffer:
-                    print(pair[0])
-                for id in buffer_remaining:
-                    print(id, end="\t")
-                print()
-                '''
                 term_dic = {}
                 cur_term, cur_ind = pq.get()
-                term_dic["name"] = cur_term
+                term_dic["term"] = cur_term
                 term_dic["idf"] = 0
                 term_dic["docs"] = []
                 for pair in read_buffer[cur_ind][1]:
                     term_dic["docs"].append(pair)
                 if cur_ind in buffer_remaining:
-                    line = linecache.getline(
-                        path_file_aux + str(cur_ind+1) + path_file_aux_end, number_of_line_buffer[cur_ind]).rstrip()
+                    line = linecache.getline(path_file_aux + str(cur_ind+1) + path_file_aux_end,
+                                              number_of_line_buffer[cur_ind]).rstrip()
                     number_of_line_buffer[cur_ind] = number_of_line_buffer[cur_ind] + 1
                     if line == "":
                         buffer_remaining.remove(cur_ind)
-                        # Borrar archivo aux
-                        remove(path_file_aux + str(cur_ind + 1) +
-                               path_file_aux_end)
+                        # Borrar el archivo auxiliar
+                        remove(path_file_aux + str(cur_ind + 1) + path_file_aux_end)
                     else:
                         read_buffer[cur_ind] = self.__get_item_from_json_line(
                             line)
                         pq.put((read_buffer[cur_ind][0], cur_ind))
-                # Mientras salga el mismo cur_term en pq.get, añado a local_map
+                # Mientras salga el mismo cur_term en pq.get, se agrega a local_map
                 while not pq.empty():
                     cur_term_2, cur_ind_2 = pq.get()
                     if cur_term_2 != cur_term:
@@ -227,49 +197,28 @@ class DataRecovery():
                     for pair in read_buffer[cur_ind_2][1]:
                         term_dic["docs"].append(pair)
                     if cur_ind_2 in buffer_remaining:
-                        line = linecache.getline(
-                            path_file_aux + str(cur_ind_2+1) + path_file_aux_end, number_of_line_buffer[cur_ind_2]).rstrip()
+                        line = linecache.getline(path_file_aux + str(cur_ind_2+1) + path_file_aux_end,
+                                                  number_of_line_buffer[cur_ind_2]).rstrip()
                         number_of_line_buffer[cur_ind_2] = number_of_line_buffer[cur_ind_2] + 1
                         if line == "":
                             buffer_remaining.remove(cur_ind_2)
-                            # Borrar archivo aux
-                            remove(path_file_aux +
-                                   str(cur_ind_2 + 1) + path_file_aux_end)
+                            # Borrar el archivo auxiliar
+                            remove(path_file_aux + str(cur_ind_2 + 1) + path_file_aux_end)
                         else:
-                            read_buffer[cur_ind_2] = self.__get_item_from_json_line(
-                                line)
+                            read_buffer[cur_ind_2] = self.__get_item_from_json_line(line)
                             pq.put((read_buffer[cur_ind_2][0], cur_ind_2))
-                term_dic["idf"] = log10(self.N/len(term_dic["docs"]))
-                size2 = size2 + len(term_dic["docs"])
+                term_dic["idf"] = np.log10(self.N/len(term_dic["docs"]))
+                size2 += len(term_dic["docs"])
                 file.write(json.dumps(term_dic, ensure_ascii=False))
                 file.write("\n")
-                self.Nterms = self.Nterms + 1
-            # print("n: ", n)
-            file.close()
-        print(str(self.Nterms) +
-              " términos encontrados")
-        print(str(self.N) +
-              " tweets procesados")
-        # Comprobación
-        '''
-        size3 = 0
-        with open(path_file_data, 'r', encoding="utf-8") as file:
-            for term in file:
-                term = term.rstrip()
-                json_term = json.load(io.StringIO(term))
-                docs = json_term.get("docs")
-                size3 = size3 + len(docs)
-            file.close()
-        print("Final:")
-        print("size:", size)
-        print("size2:", size2)
-        print("size3:", size3)
-        print("N:", self.N)
-        '''
+                self.Nterms += 1
+        print(str(self.Nterms) + " términos encontrados")
+        print(str(self.N) + " tweets procesados")
         return "Invert index created. " + str(self.Nterms) + " términos encontrados. " + str(self.N) + " tweets procesados"
 
     def __search_term_in_data(self, query_map):
         # query map es un mapa de semanticas con frecuencias
+        # esta es una implementacion con busqueda binaria
         map_to_return = {}
         for word in query_map:
             lo = 1
@@ -278,36 +227,25 @@ class DataRecovery():
                 mi = (hi + lo) // 2
                 line = linecache.getline(path_file_data, mi).rstrip()
                 term_json = json.load(io.StringIO(line))
-                term_name = term_json.get("name")
-                if term_name < word:
+                term_ = term_json.get("term")
+                if term_ < word:
                     lo = mi + 1
-                elif term_name > word:
+                elif term_ > word:
                     hi = mi - 1
                 else:
                     map_to_return[word] = dict(term_json)
                     break
         return map_to_return
-        '''
-        with open(path_file_data, 'r', encoding="utf-8") as file:
-            for line in file:
-                line = line.rstrip()
-                json_term = json.load(io.StringIO(line))
-                if json_term.get("name") in query_map:
-                    map_to_return[json_term.get("name")] = dict(json_term)
-            file.close()
-        return map_to_return
-        '''
 
-    def __search_tweet_norm(self, list_tweet_id):
+    def __search_tweet_norm(self, set_tweet_id):
         map_to_return = {}
         with open(path_norm_doc, 'r', encoding="utf-8") as file:
             for line in file:
                 line = line.rstrip()
                 json_term = json.load(io.StringIO(line))
                 keys = list(json_term.keys())
-                if keys[0] in list_tweet_id:
+                if keys[0] in set_tweet_id:
                     map_to_return[keys[0]] = json_term.get(keys[0])
-            file.close()
         return map_to_return
 
     def __recover_tweets(self, score):
@@ -320,9 +258,7 @@ class DataRecovery():
                         tweet = tweet.rstrip()
                         json_tweet = json.load(io.StringIO(tweet))
                         if str(json_tweet.get("id")) in score:
-                            map_to_return[str(
-                                json_tweet.get("id"))] = json_tweet
-                    file_to_load.close()
+                            map_to_return[str(json_tweet.get("id"))] = json_tweet
         return map_to_return
 
     def score(self, query):
@@ -350,52 +286,85 @@ class DataRecovery():
                 continue
             query_root_word = self.__getStem(word)
             if query_root_word in query_map:
-                query_map[query_root_word] = query_map[query_root_word] + 1
+                query_map[query_root_word] += 1
             else:
                 query_map[query_root_word] = 1
 
         self.map_score.clear()
         self.map_tweets.clear()
         self.list_keys.clear()
+
         map_terms = self.__search_term_in_data(query_map)
-        list_tweet_id = []
-        for term in map_terms:
-            wtq = log10(1+query_map[term]) * map_terms[term]["idf"]
-            for tweet_id, tf_t_d in map_terms[term]["docs"]:
-                if tweet_id not in self.map_score:
-                    list_tweet_id.append(tweet_id)
-                    self.map_score[tweet_id] = 0.0
-                wtd = log10(1+tf_t_d) * map_terms[term]["idf"]
-                self.map_score[tweet_id] = self.map_score[tweet_id] + wtq * wtd
-        map_tweet_norm = self.__search_tweet_norm(list_tweet_id)
-        for tweet_id in self.map_score:
-            self.map_score[tweet_id] = self.map_score[tweet_id] / \
-                map_tweet_norm[tweet_id]
+
+        query_vec = []
+        for term in query_map.keys():
+            term_inv_idx = map_terms[term]
+            if not term_inv_idx:
+                query_vec.append(0)
+                continue
+            tf = query_map[term]
+            idf = term_inv_idx["idf"]
+            query_vec.append(np.log10(tf+1) * idf)
+        
+        query_vec = np.array(query_vec)
+        query_vec = query_vec/np.linalg.norm(query_vec, 2)
+        
+        map_term_tweet_tf = {}
+        for term in query_map.keys():
+            map_tweet_tf = {}
+            term_inv_idx = map_terms[term]
+            if not term_inv_idx:
+                continue
+            term_tweet_tf = term_inv_idx["docs"]
+            map_tweet_tf = {x[0]:x[1] for x in term_tweet_tf}
+            map_term_tweet_tf[term] = map_tweet_tf
+
+        #filtrar tweet ids repetidos
+        query_set_tweet_ids = set()
+        for term in query_map.keys():
+            term_inv_idx = map_terms[term]
+            if term_inv_idx:
+                ids = map_term_tweet_tf[term]
+                query_set_tweet_ids.update(ids.keys())
+
+        map_tweet_norm = self.__search_tweet_norm(query_set_tweet_ids)
+        map_tweets_vecs = {}
+        for tweet in query_set_tweet_ids:
+            tweet_vec = []
+            for term in query_map.keys():
+                term_inv_idx = map_terms[term]
+                if not term_inv_idx:
+                    tweet_vec.append(0)
+                    continue
+                tweet_tf = map_term_tweet_tf[term]
+                if tweet_tf:
+                    tf = tweet_tf.get(tweet, 0)
+                    idf = term_inv_idx["idf"]
+                    tweet_vec.append(np.log10(tf+1) * idf)
+                else:
+                    tweet_vec.append(0)
+            tweet_vec = np.array(tweet_vec)
+            tweet_vec /= map_tweet_norm[tweet]
+            map_tweets_vecs[tweet] = tweet_vec
+
+        for document, vector in map_tweets_vecs.items():
+            self.map_score[document] = np.dot(query_vec, vector)
 
         self.map_score = dict(sorted(self.map_score.items(), key=lambda item: item[1], reverse=True))
         self.map_tweets = self.__recover_tweets(self.map_score)
         print(len(self.map_tweets), " tweets recuperados")
         self.list_keys = list(self.map_score.keys())
-        if len(self.list_keys) > 0:
-            self.max_score = self.map_score[self.list_keys[0]]
-        else:
-            self.max_score = 0
         return len(self.map_tweets)
 
-    def retrieve_k_tweets(self, page_str):
-        page_number = int(page_str)
+    def retrieve_k_tweets(self, k):
         result = {}
-        for i in range((page_number-1)*MAX_SIZE_OF_PAGE, (page_number)*MAX_SIZE_OF_PAGE):
+        for i in range(k):
             if i >= len(self.list_keys):
                 break
             result_tweet = {}
             result_tweet['tweet_id'] = self.list_keys[i]
             result_tweet['position'] = i
             result_tweet['score'] = self.map_score[self.list_keys[i]]
-            if self.max_score == 0:
-                result_tweet['relative_score'] = 0
-            else:
-                result_tweet['relative_score'] = self.map_score[self.list_keys[i]]/self.max_score * 100
             result_tweet['date'] = self.map_tweets[self.list_keys[i]].get('date')
             result_tweet['user_id'] = self.map_tweets[self.list_keys[i]].get('user_id')
             result_tweet['user_name'] = self.map_tweets[self.list_keys[i]].get('user_name')
