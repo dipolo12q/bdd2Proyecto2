@@ -10,6 +10,7 @@ jsonify,
 send_from_directory
 )
 import os
+import recovery.Postgres as pg
 app = Flask(__name__, template_folder= '../frontend/', static_folder = '../frontend/')
 
 
@@ -45,9 +46,12 @@ def retrieve(number, query):
     palabra = query
     page = number
     print(data)
+    #postgress
+    data2,time = pg.retrieve_k_tweets(number)
+    
     if(not data):
         return redirect(url_for('retrieve', number = 1, query = palabra))
-    return render_template('retrieve.html', obj = data, word = palabra, Npage = page)
+    return render_template('retrieve.html', obj2 = data2, obj = data, word = palabra, Npage = page, postgres_time = time)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -59,3 +63,5 @@ if __name__ == '__main__':
     app.run(debug = True, port = 5050)
     app.add_url_rule('/favicon.ico',
                  redirect_to=url_for('static', filename='src/logoico.png'))
+    
+
